@@ -22,9 +22,9 @@ module Mongoid
       end
 
     end
-    
+
     context "with default settings" do
-      
+
       let!(:flower_myth) { BasicArtwork.create(:title => 'Flower Myth') }
       let!(:flowers)     { BasicArtwork.create(:title => 'Flowers') }
       let!(:lowered)     { BasicArtwork.create(:title => 'Lowered') }
@@ -34,17 +34,17 @@ module Mongoid
       let!(:julio)       { BasicArtwork.create(:title => "Julio Cesar Morales") }
       let!(:csar)        { BasicArtwork.create(:title => "Csar") }
       let!(:percent)     { BasicArtwork.create(:title => "Untitled (cal%desert)") }
-      
+
       it "returns empty for empties" do
         BasicArtwork.fulltext_search(nil, :max_results => 1).should == []
         BasicArtwork.fulltext_search("", :max_results => 1).should == []
       end
-      
+
       it "finds percents" do
         BasicArtwork.fulltext_search("cal%desert".force_encoding("ASCII-8BIT"), :max_results => 1).first.should == percent
         BasicArtwork.fulltext_search("cal%desert".force_encoding("UTF-8"), :max_results => 1).first.should == percent
       end
-      
+
       it "forgets accents" do
         BasicArtwork.fulltext_search('cesar', :max_results => 1).first.should == cesar
         BasicArtwork.fulltext_search('cesar g', :max_results => 1).first.should == cesar
@@ -90,24 +90,24 @@ module Mongoid
         BasicArtwork.fulltext_search('coo').first.should == cookies
         BasicArtwork.fulltext_search('c!!!oo').first.should == cookies
       end
-            
+
     end
-    
+
     context "with default settings" do
-      
+
       let!(:flower_myth) { Gallery::BasicArtwork.create(:title => 'Flower Myth') }
       let!(:flowers)     { Gallery::BasicArtwork.create(:title => 'Flowers') }
       let!(:lowered)     { Gallery::BasicArtwork.create(:title => 'Lowered') }
       let!(:cookies)     { Gallery::BasicArtwork.create(:title => 'Cookies') }
       let!(:empty)       { Gallery::BasicArtwork.create(:title => '') }
-      
+
       it "returns exact matches for model within a module" do
         Gallery::BasicArtwork.fulltext_search('Flower Myth', :max_results => 1).first.should == flower_myth
         Gallery::BasicArtwork.fulltext_search('Flowers', :max_results => 1).first.should == flowers
         Gallery::BasicArtwork.fulltext_search('Cookies', :max_results => 1).first.should == cookies
         Gallery::BasicArtwork.fulltext_search('Lowered', :max_results => 1).first.should == lowered
       end
-      
+
     end
 
     context "with default settings" do
@@ -124,9 +124,9 @@ module Mongoid
           [yellow_leaves_2, yellow_leaves_3, yellow_leaves_20].sort_by{ |x| x.title }
         BasicArtwork.fulltext_search('yellow cup').first.should == yellow_cup
       end
-      
+
     end
-    
+
     context "with default settings" do
       let!(:monet)             { BasicArtwork.create(:title => 'claude monet') }
       let!(:one_month_weather_permitting)  { BasicArtwork.create(:title => 'one month weather permitting monday') }
@@ -135,16 +135,16 @@ module Mongoid
         BasicArtwork.fulltext_search('monet').first.should == monet
       end
     end
-    
+
     context "with default settings" do
-      
+
       let!(:abc)       { BasicArtwork.create(:title => "abc") }
       let!(:abcd)      { BasicArtwork.create(:title => "abcd") }
       let!(:abcde)     { BasicArtwork.create(:title => "abcde") }
       let!(:abcdef)    { BasicArtwork.create(:title => "abcdef") }
       let!(:abcdefg)   { BasicArtwork.create(:title => "abcdefg") }
       let!(:abcdefgh)  { BasicArtwork.create(:title => "abcdefgh") }
-      
+
       it "returns exact matches from a list of similar prefixes" do
         BasicArtwork.fulltext_search('abc').first.should == abc
         BasicArtwork.fulltext_search('abcd').first.should == abcd
@@ -155,7 +155,7 @@ module Mongoid
       end
 
     end
-    
+
     context "with an index name specified" do
       let!(:pablo_picasso)       { ExternalArtist.create(:full_name => 'Pablo Picasso') }
       let!(:portrait_of_picasso) { ExternalArtwork.create(:title => 'Portrait of Picasso') }
@@ -219,7 +219,7 @@ module Mongoid
       end
 
     end
-    
+
     context "with an index name specified" do
 
       let!(:andy_warhol)         { ExternalArtist.create(:full_name => 'Andy Warhol') }
@@ -229,14 +229,14 @@ module Mongoid
         ExternalArtist.fulltext_search('warhol').should == [warhol, andy_warhol]
         index_collection = ExternalArtist.collection.database[ExternalArtist.mongoid_fulltext_config.keys.first]
         index_collection.find('document_id' => warhol.id).each do |idef|
-          index_collection.find('_id' => idef['_id']).update('document_id' => Moped::BSON::ObjectId.new)
+          index_collection.find('_id' => idef['_id']).update('document_id' => BSON::ObjectId.new)
         end
         # We should no longer be able to find warhol, but that shouldn't keep it from returning results
         ExternalArtist.fulltext_search('warhol').should == [andy_warhol]
       end
-      
+
     end
-    
+
     context "with an index name specified" do
 
       let!(:pop)                { ExternalArtwork.create(:title => 'Pop') }
@@ -254,14 +254,14 @@ module Mongoid
 
     end
     context "with an index name specified" do
-      
+
       let!(:abc)       { ExternalArtwork.create(:title => "abc") }
       let!(:abcd)      { ExternalArtwork.create(:title => "abcd") }
       let!(:abcde)     { ExternalArtwork.create(:title => "abcde") }
       let!(:abcdef)    { ExternalArtwork.create(:title => "abcdef") }
       let!(:abcdefg)   { ExternalArtwork.create(:title => "abcdefg") }
       let!(:abcdefgh)  { ExternalArtwork.create(:title => "abcdefgh") }
-      
+
       it "returns exact matches from a list of similar prefixes" do
         ExternalArtwork.fulltext_search('abc').first.should == abc
         ExternalArtwork.fulltext_search('abcd').first.should == abcd
@@ -272,7 +272,7 @@ module Mongoid
       end
 
     end
-    
+
     context "with an index name specified" do
 
       it "cleans up item from the index after they're destroyed" do
@@ -286,7 +286,7 @@ module Mongoid
       end
 
     end
-    
+
     context "with an index name specified and no fields provided to index" do
 
       let!(:big_bang) { ExternalArtworkNoFieldsSupplied.create(:title => 'Big Bang', :artist => 'David Poppie', :year => '2009') }
@@ -298,14 +298,14 @@ module Mongoid
       end
 
     end
-    
+
     context "with multiple indexes defined" do
-      
+
       let!(:pop)                { MultiExternalArtwork.create(:title => 'Pop', :year => '1970', :artist => 'Joe Schmoe') }
       let!(:pop_culture)        { MultiExternalArtwork.create(:title => 'Pop Culture', :year => '1977', :artist => 'Jim Schmoe') }
       let!(:contemporary_pop)   { MultiExternalArtwork.create(:title => 'Contemporary Pop', :year => '1800', :artist => 'Bill Schmoe') }
       let!(:kung_fu_lollipop)   { MultiExternalArtwork.create(:title => 'Kung-Fu Lollipop', :year => '2006', :artist => 'Michael Anderson') }
-      
+
       it "allows searches to hit a particular index" do
         title_results = MultiExternalArtwork.fulltext_search('pop', :index => 'mongoid_fulltext.titles').sort_by{ |x| x.title }
         title_results.should == [pop, pop_culture, contemporary_pop, kung_fu_lollipop].sort_by{ |x| x.title }
@@ -320,9 +320,9 @@ module Mongoid
       end
 
     end
-    
+
     context "with multiple fields indexed and the same index used by multiple models" do
-      
+
       let!(:andy_warhol)         { MultiFieldArtist.create(:full_name => 'Andy Warhol', :birth_year => '1928') }
       let!(:warhol)              { MultiFieldArtwork.create(:title => 'Warhol', :year => '2010') }
       let!(:pablo_picasso)       { MultiFieldArtist.create(:full_name => 'Pablo Picasso', :birth_year => '1881') }
@@ -334,7 +334,7 @@ module Mongoid
         MultiFieldArtist.fulltext_search('pablo').first.should == pablo_picasso
         MultiFieldArtist.fulltext_search('1881').first.should == pablo_picasso
         MultiFieldArtist.fulltext_search('portrait 1912').first.should == portrait_of_picasso
-        
+
         MultiFieldArtwork.fulltext_search('2010').first.should == warhol
         MultiFieldArtwork.fulltext_search('andy').first.should == andy_warhol
         MultiFieldArtwork.fulltext_search('pablo').first.should == pablo_picasso
@@ -344,7 +344,7 @@ module Mongoid
 
     end
     context "with filters applied to multiple models" do
-      
+
       let!(:foobar_artwork)    { FilteredArtwork.create(:title => 'foobar') }
       let!(:barfoo_artwork)    { FilteredArtwork.create(:title => 'barfoo') }
       let!(:foobar_artist)     { FilteredArtist.create(:full_name => 'foobar') }
@@ -391,9 +391,9 @@ module Mongoid
       end
 
     end
-    
+
     context "with partitions applied to a model" do
-      
+
       let!(:artist_2) { PartitionedArtist.create(:full_name => 'foobar', :exhibitions => [ "Art Basel 2011", "Armory NY" ]) }
       let!(:artist_1) { PartitionedArtist.create(:full_name => 'foobar', :exhibitions => [ "Art Basel 2011", ]) }
       let!(:artist_0) { PartitionedArtist.create(:full_name => 'foobar', :exhibitions => [ ]) }
@@ -416,7 +416,7 @@ module Mongoid
       it "returns max_results" do
         BasicArtwork.fulltext_search('flower', { :max_results => 1 }).length.should == 1
       end
-      
+
       it "returns scored results" do
         results = BasicArtwork.fulltext_search('flowers', { :return_scores => true })
         first_result = results[0]
@@ -441,7 +441,7 @@ module Mongoid
 
     context "returning scores" do
       # Since we return scores, let's make some weak guarantees about what they actually mean
-      
+
       let!(:mao_yan)      { ExternalArtist.create(:full_name => "Mao Yan") }
       let!(:mao)          { ExternalArtwork.create(:title => "Mao by Andy Warhol") }
       let!(:maox)         { ExternalArtwork.create(:title => "Maox by Randy Morehall") }
@@ -454,7 +454,7 @@ module Mongoid
           results.map{ |result| result[-1] }.inject(true){ |accum, item| accum &= (item < 1) }.should be_true
         end
       end
-      
+
       it "returns prefix matches with a score >= 1 but < 2" do
         ['warho', 'rand'].each do |query|
           results = ExternalArtist.fulltext_search(query, { :return_scores => true })
@@ -462,7 +462,7 @@ module Mongoid
           results.map{ |result| result[-1] if result[0].to_s.starts_with?(query)}.compact.inject(true){ |accum, item| accum &= (item >= 1 and item < 2) }.should be_true
         end
       end
-      
+
       it "returns full-word matches with a score >= 2" do
         ['andy', 'warhol', 'mao'].each do |query|
           results = ExternalArtist.fulltext_search(query, { :return_scores => true })
@@ -470,7 +470,7 @@ module Mongoid
           results.map{ |result| result[-1] if result[0].to_s.split(' ').member?(query) }.compact.inject(true){ |accum, item| accum &= (item >= 2) }.should be_true
         end
       end
-      
+
     end
 
     context "with stop words defined" do
@@ -525,13 +525,13 @@ module Mongoid
         BasicArtwork.remove_from_ngram_index
         BasicArtwork.fulltext_search('flower').length.should == 0
       end
-      
+
       it "removes a single record from the index" do
         flowers1.remove_from_ngram_index
         BasicArtwork.fulltext_search('flower').length.should == 1
       end
     end
-    
+
     context "update_ngram_index" do
       let!(:flowers1)     { BasicArtwork.create(:title => 'Flowers 1') }
       let!(:flowers2)     { BasicArtwork.create(:title => 'Flowers 2') }
@@ -629,27 +629,27 @@ module Mongoid
           flowers1.update_ngram_index
           BasicArtwork.fulltext_search('flower').length.should == 1
         end
-        
+
         it "updates index on all records" do
           BasicArtwork.update_ngram_index
           BasicArtwork.fulltext_search('flower').length.should == 2
         end
 
       end
-      
+
       context "incremental" do
-      
+
         it "removes an existing record" do
           coll = Mongoid.default_session["mongoid_fulltext.index_basicartwork_0"]
           coll.find('document_id' => flowers1._id).remove_all
           coll.find('document_id' => flowers1._id).one.should == nil
           flowers1.update_ngram_index
         end
-        
+
       end
 
       context "mongoid indexes" do
-      
+
         it "can re-create dropped indexes" do
           # there're no indexes by default as Mongoid.autocreate_indexes is set to false
           # but mongo will automatically attempt to index _id in the background
@@ -662,7 +662,7 @@ module Mongoid
           end
           current_indexes.sort.should == expected_indexes
         end
-        
+
         it "doesn't fail on models that don't have a fulltext index" do
           lambda { HiddenDragon.create_indexes }.should_not raise_error
         end
@@ -671,7 +671,7 @@ module Mongoid
           Mongoid.logger = false
           BasicArtwork.create_indexes
         end
-        
+
       end
 
     end
@@ -688,7 +688,7 @@ module Mongoid
 
     # For =~ operator documentation
     # https://github.com/dchelimsky/rspec/blob/master/lib/spec/matchers/match_array.rb#L53
-    
+
     context "with artwork that returns an array of colors as a filter" do
       let!(:title) {"title"}
       let!(:nomatch) {"nomatch"}

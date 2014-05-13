@@ -13,7 +13,7 @@ module Mongoid::FullTextSearch
   class UnknownFilterQueryOperator < StandardError; end
 
   module ClassMethods
-  
+
     def fulltext_search_in(*args)
       self.mongoid_fulltext_config = {} if self.mongoid_fulltext_config.nil?
       options = args.last.is_a?(Hash) ? args.pop : {}
@@ -47,7 +47,7 @@ module Mongoid::FullTextSearch
                              'before', 'should', 'himself', 'herself', 'because', 'against', 'between', 'through',
                              'further', 'yourself', 'ourselves', 'yourselves', 'themselves'].map{ |x| [x,true] }]
       }
-      
+
       config.update(options)
 
       args = [:to_s] if args.empty?
@@ -55,11 +55,11 @@ module Mongoid::FullTextSearch
       config[:alphabet] = Hash[config[:alphabet].split('').map{ |ch| [ch,ch] }]
       config[:word_separators] = Hash[config[:word_separators].split('').map{ |ch| [ch,ch] }]
       self.mongoid_fulltext_config[index_name] = config
-      
+
       before_save(:update_ngram_index) if config[:reindex_immediately]
       before_destroy :remove_from_ngram_index
     end
-    
+
     def create_fulltext_indexes
       return unless self.mongoid_fulltext_config
       self.mongoid_fulltext_config.each_pair do |index_name, fulltext_config|
@@ -75,7 +75,7 @@ module Mongoid::FullTextSearch
       filter_indexes = (config[:filters] || []).map do |key,value|
         ["filter_values.#{key}", 1]
       end.sort_by { |filter_index| filter_index[0] }
-      
+
       index_definition = [['ngram', 1], ['score', -1]].concat(filter_indexes)
 
       # Since the definition of the index could have changed, we'll clean up by
@@ -96,14 +96,14 @@ module Mongoid::FullTextSearch
         filter_indexes = all_filter_keys.map {|key| [key, 1] }.sort_by { |filter_index| filter_index[0] }
         index_definition = [['ngram', 1], ['score', -1]].concat(filter_indexes)
       end
-      
+
       Mongoid.logger.info "Ensuring fts_index on #{coll.name}: #{index_definition}" if Mongoid.logger
       coll.indexes.create(Hash[index_definition], { :name => 'fts_index' })
 
       Mongoid.logger.info "Ensuring document_id index on #{coll.name}" if Mongoid.logger
       coll.indexes.create('document_id' => 1) # to make removes fast
     end
-    
+
     def fulltext_search(query_string, options={})
       max_results = options.has_key?(:max_results) ? options.delete(:max_results) : 10
       return_scores = options.has_key?(:return_scores) ? options.delete(:return_scores) : false
@@ -120,7 +120,10 @@ module Mongoid::FullTextSearch
 
       # For each ngram, construct the query we'll use to pull index documents and
       # get a count of the number of index documents containing that n-gram
-      ordering = {'score' => -1}
+      ordering_field = options.has_key?(:order_field) ? options.delete(:order_field) : 'score'
+      ordering_type = options.has_key?(:order_type) ? options.delete(:order_type) : -1
+      ordering = {}
+      ordering[ordering_field] = ordering_type
       limit = self.mongoid_fulltext_config[index_name][:max_candidate_set_size]
       coll = collection.database[index_name]
       cursors = ngrams.map do |ngram|
@@ -151,7 +154,7 @@ module Mongoid::FullTextSearch
                 {:clazz => candidate['class'], :score => candidate['score'] * ngram_score}]
              end]
       end.compact
-      
+
       # Finally, score all candidates by matching them up with other candidates that are
       # associated with the same document. This is similar to how you might process a
       # boolean AND query, except that with an AND query, you'd stop after considering
@@ -172,11 +175,11 @@ module Mongoid::FullTextSearch
       all_scores.sort!{ |document1, document2| -document1[:score] <=> -document2[:score] }
       instantiate_mapreduce_results(all_scores[0..max_results-1], { :return_scores => return_scores })
     end
-    
+
     def instantiate_mapreduce_result(result)
       result[:clazz].constantize.find(result[:id])
     end
-    
+
     def instantiate_mapreduce_results(results, options)
       if (options[:return_scores])
         results.map { |result| [ instantiate_mapreduce_result(result), result[:score] ] }.find_all { |result| ! result[0].nil? }
@@ -198,7 +201,7 @@ module Mongoid::FullTextSearch
 
       # Remove any characters that aren't in the alphabet and aren't word separators
       filtered_str = str.mb_chars.downcase.to_s.split('').find_all{ |ch| config[:alphabet][ch] or config[:word_separators][ch] }.join('')
-      
+
       # Figure out how many ngrams to extract from the string. If we can't afford to extract all ngrams,
       # step over the string in evenly spaced strides to extract ngrams. For example, to extract 3 3-letter
       # ngrams from 'abcdefghijk', we'd want to extract 'abc', 'efg', and 'ijk'.
@@ -207,7 +210,7 @@ module Mongoid::FullTextSearch
       else
         step_size = 1
       end
-      
+
       # Create an array of records of the form {:ngram => x, :score => y} for all ngrams that occur in the
       # input string using the step size that we just computed. Let score(x,y) be the score of string x
       # compared with string y - assigning scores to ngrams with the square root-based scoring function
@@ -226,7 +229,7 @@ module Mongoid::FullTextSearch
 
       # If an ngram appears multiple times in the query string, keep the max score
       ngram_array = ngram_array.group_by{ |h| h[:ngram] }.map{ |key, values| {:ngram => key, :score => values.map{ |v| v[:score] }.max} }
-      
+
       if config[:index_short_prefixes] or config[:index_full_words]
         split_regex_def = config[:word_separators].keys.map{ |k| Regexp.escape(k) }.join
         split_regex = Regexp.compile("[#{split_regex_def}]")
@@ -260,20 +263,20 @@ module Mongoid::FullTextSearch
       # If an ngram appears as any combination of full word, short prefix, and ngram, keep the sum of the two scores
       Hash[ngram_array.group_by{ |h| h[:ngram] }.map{ |key, values| [key, values.map{ |v| v[:score] }.sum] }]
     end
-    
+
     def remove_from_ngram_index
       self.mongoid_fulltext_config.each_pair do |index_name, fulltext_config|
         coll = collection.database[index_name]
         coll.find({'class' => self.name}).remove_all
       end
     end
-    
+
     def update_ngram_index
       self.all.each do |model|
         model.update_ngram_index
       end
     end
-    
+
     private
     # Take a list of filters to be mapped so they can update the query
     # used upon the fulltext search of the ngrams
